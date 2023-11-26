@@ -1,0 +1,42 @@
+name: Deploy to Azure Functions
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v2
+
+    - name: 'Set up Python'
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10.11' # Specify the Python version.
+
+    - name: 'Install dependencies'
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt # Assuming you have a requirements.txt file.
+
+    - name: 'Run Tests' # Optional: Run any tests you have.
+      run: |
+        # Add commands to run tests here.
+
+    - name: 'Login via Azure CLI'
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Deploy to Azure Functions'
+      uses: Azure/functions-action@v1
+      with:
+        app-name: assistantfunc3
+        package: . # The path to your project.
+        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+
+    - name: 'Logout of Azure CLI'
+      run: az logout
