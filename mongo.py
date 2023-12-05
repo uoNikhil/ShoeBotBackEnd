@@ -46,16 +46,17 @@ def save_message():
         # Get headers from the request
         message = request.headers.get('Message')
         is_user = request.headers.get('IsUser')
+        uid = request.headers.get('uid')
 
         # Check if both headers are present
-        if not message or is_user is None:
+        if not message or is_user or uid is None:
             return jsonify({'error': 'Message and IsUser headers are required'}), 400
 
         # Convert is_user to boolean
         is_user = is_user.lower() == 'true'
 
         # Create a document to be inserted into MongoDB
-        data = {'message': message, 'is_user': is_user}
+        data = {'message': message, 'is_user': is_user, 'uid':uid}
 
         # Insert the document into the MongoDB collection
         result = collection.insert_one(data)
