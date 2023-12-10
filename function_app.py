@@ -7,6 +7,10 @@ import json
 import time
 
 import os
+from pymongo import MongoClient
+from flask import jsonify
+
+
 openAiKey = os.environ.get('OPENAI_API_KEY')
 assistant_id = os.environ.get('ASSISTANT_ID')
 
@@ -70,3 +74,87 @@ def http_trigger(req: func.HttpRequest) -> func.HttpResponse:
             f"An error occurred: {str(e)}",
             status_code=500
         )
+
+
+# Replace 'YOUR_MONGODB_URI' with your actual MongoDB URI
+MONGO_URI = 'mongodb+srv://ramvilla997:Qwerty123@cluster0.b8wxule.mongodb.net/shoebot_db?retryWrites=true&w=majority'
+
+def get_mongo_client():
+    return MongoClient(MONGO_URI)
+
+def get_collection(collection_name):
+    client = get_mongo_client()
+    db = client.get_database('shoebot_db')
+    return db.get_collection(collection_name)
+
+@app.route('/api/records', methods=['GET'])
+def get_records(request: func.HttpRequest) -> func.HttpResponse:
+    try:
+        # Access the desired collection
+        collection = get_collection('products')
+
+        # Query the collection to fetch all records
+        records = list(collection.find({}))
+        for record in records:
+            record['_id'] = str(record['_id'])
+
+        # Convert the records to a list of dictionaries
+        records_list = [record for record in records]
+
+        # Return the records as a JSON response
+        return func.HttpResponse(jsonify(records_list), mimetype="application/json")
+
+    except Exception as e:
+        return func.HttpResponse(jsonify({'error': str(e)}), status_code=500)
+
+@app.route('/save_message', methods=['POST'])
+def save_message(request: func.HttpRequest) -> func.HttpResponse:
+    try:
+        # Access the desired collection
+        collection = get_collection('messages')
+
+        # Get headers from the request
+        message = request.headers.get('Message')
+        is_user = request.headers.get('IsUser')
+        uid = request.headers.get('uid')
+
+        # Check if both headers are present
+        if not message or is_user is None or uid is None:
+            return func.HttpResponse(jsonify({'error': 'Message, uid, and IsUser headers are required'}), status_code=400)
+
+        # Convert is_user to boolean
+        is_user = is_user.lower() == 'true'
+
+        # Create a document to be inserted into MongoDB
+        data = {'message': message, 'is_user': is_user, 'uid': uid}
+
+        # Insert the document into the MongoDB collection
+        result = collection.insert_one(data)
+
+        # Return a success response
+        return func.HttpResponse(jsonify({'success': True, 'message_id': str(result.inserted_id)}), status_code=200)
+
+    except Exception as e:
+        # Handle exceptions
+        return func.HttpResponse(jsonify({'error': str(e)}), status_code=500)
+
+@app.route('/get_messages', methods=['GET'])
+def get_messages(request: func.HttpRequest) -> func.HttpResponse:
+    try:
+        # Access the desired collection
+        collection = get_collection('messages')
+
+        # Retrieve documents from the MongoDB collection
+        records = list(collection.find({}))
+        for record in records:
+            record['_id'] = str(record['_id'])
+
+        # Convert the records to a list of dictionaries
+        records_list = [record for record in records]
+
+        # Return the records as a JSON response
+        return func.HttpResponse(jsonify(records_list), mimetype="application/json")
+
+    except Exception as e:
+        # Handle exceptions
+        return func.HttpResponse(jsonify({'error': str(e)}), status_code=500)

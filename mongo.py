@@ -49,8 +49,8 @@ def save_message():
         uid = request.headers.get('uid')
 
         # Check if both headers are present
-        if not message or is_user or uid is None:
-            return jsonify({'error': 'Message and IsUser headers are required'}), 400
+        if not message or is_user is None or uid is None:
+            return jsonify({'error': 'Message, uid, and IsUser headers are required'}), 400
 
         # Convert is_user to boolean
         is_user = is_user.lower() == 'true'
